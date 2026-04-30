@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CLINIQ Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background-color: #f0f4f8; font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        
+        .header-container { background-color: #88B2A1; height: 60px; display: flex; align-items: center; width: 100%; z-index: 30; }
+        .logo-area { display: flex; align-items: center; gap: 12px; min-width: 240px; padding-left: 20px; }
+        .white-stretch-bar { background-color: #ffffff; height: 36px; flex-grow: 1; border-radius: 8px 0 0 8px; margin-left: 10px; }
+
+        .layout-wrapper { display: flex; flex: 1; overflow: hidden; }
+        .sidebar { background-color: #ffffff; width: 240px; height: 100%; display: flex; flex-direction: column; border-right: 1px solid #e2e8f0; padding: 1rem; }
+        .main-content { flex: 1; overflow-y: auto; padding: 2rem; background-color: #f0f4f8; }
+        
+        .section-tag { background-color: #88B2A1; color: white; padding: 4px 16px; border-radius: 0 12px 12px 0; font-size: 11px; font-weight: bold; width: fit-content; margin-bottom: 8px; margin-left: -16px; }
+        .nav-item { transition: all 0.2s; cursor: pointer; color: #88B2A1; font-weight: 500; font-size: 13px; padding: 8px 16px; display: flex; align-items: center; gap: 12px; border-radius: 6px; }
+        .nav-item:hover { background-color: #f8fafc; }
+        .active-nav { color: #5a7d6e; font-weight: 700; background-color: #f0fbf7; border-right: 4px solid #88B2A1; }
+
+        .sign-out-tag { background-color: #88B2A1; color: white; padding: 8px 24px 8px 16px; border-radius: 0 25px 25px 0; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 12px; width: fit-content; margin-left: -16px; border: none; cursor: pointer; transition: background 0.2s; }
+        .sign-out-tag:hover { background-color: #6e9485; }
+        
+      
+        .card { background: white; border-radius: 8px; border: 1px solid #d1d9e6; height: 100%; transition: all 0.2s ease-in-out; }
+        .stat-card { cursor: pointer; }
+        .stat-card:hover { transform: translateY(-4px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); border-color: #88B2A1; }
+
+        .page-content { display: none; animation: fadeIn 0.3s ease-out; }
+        .page-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+       
+        #logoutModal { transition: opacity 0.3s ease-out; }
+        #modalContainer { transition: transform 0.3s ease-out, opacity 0.3s ease-out; }
+    </style>
+</head>
+<body>
+
+    <header class="header-container">
+        <div class="logo-area">
+             <img src="logo.png" alt="CLINIQ Logo" class="w-10 h-10 object-contain opacity-90">
+            <span class="text-3xl font-bold tracking-widest uppercase text-white">Cliniq</span>
+        </div>
+        <div class="white-stretch-bar"></div>
+    </header>
+
+    <div class="layout-wrapper">
+        <aside class="sidebar">
+            <div class="bg-[#88B2A1] p-3 rounded-lg flex items-center gap-3 mb-6 text-white shadow-sm">
+                <div class="bg-white text-[#88B2A1] font-bold px-2 py-1 rounded text-sm">MC</div>
+                <div>
+                    <p class="text-xs font-bold leading-tight">Curitana, MC</p>
+                    <p class="text-[10px] opacity-80">Lab Administrator</p>
+                </div>
+            </div>
+
+            <nav class="flex-1">
+                <div class="mb-4">
+                    <div class="section-tag">Overview</div>
+                    <div id="nav-dashboard" class="nav-item active-nav" onclick="navigateTo('dashboard', this)"><i class="fas fa-home w-4"></i> Dashboard</div>
+                </div>
+                <div class="mb-4">
+                    <div class="section-tag">Management</div>
+                    <div id="nav-catalog" class="nav-item" onclick="navigateTo('catalog', this)"><i class="fas fa-flask w-4"></i> Test Catalog</div>
+                    <div id="nav-requests" class="nav-item" onclick="navigateTo('requests', this)"><i class="fas fa-clipboard-list w-4"></i> Lab Requests</div>
+                    <div id="nav-billing" class="nav-item" onclick="navigateTo('billing', this)"><i class="fas fa-receipt w-4"></i> Billing</div>
+                </div>
+                <div class="mb-4">
+                    <div class="section-tag">Reports</div>
+                    <div id="nav-analytics" class="nav-item" onclick="navigateTo('analytics', this)"><i class="fas fa-chart-bar w-4"></i> Analytics</div>
+                </div>
+            </nav>
+
+            <div class="mt-auto">
+                <button class="sign-out-tag mb-10" onclick="showLogoutModal()">
+                    <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+                </button>
+                <div class="pb-6 flex justify-center">
+                    <img src="logo.png" alt="CLINIQ Logo" class="w-24 h-24 object-contain opacity-90">
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            
+            <div id="dashboard" class="page-content active">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div class="card stat-card p-6 text-center" onclick="navigateTo('requests', document.getElementById('nav-requests'))">
+                        <h3 class="text-gray-500 font-bold text-xs uppercase mb-1">Total Request</h3>
+                        <p class="text-3xl font-bold text-gray-800">1, 284</p>
+                        <p class="text-[10px] text-red-400 mt-2 font-semibold italic">April 2026 — Unpaid</p>
+                    </div>
+                    <div class="card stat-card border-2 border-[#ff8a8a] p-6 text-center" onclick="navigateTo('analytics', document.getElementById('nav-analytics'))">
+                        <h3 class="text-gray-500 font-bold text-xs uppercase mb-1">Avg TAT</h3>
+                        <p class="text-3xl font-bold text-red-500">4.2h</p>
+                        <p class="text-[10px] text-red-400 mt-2 font-semibold italic">April 2026 — Unpaid</p>
+                    </div>
+                    <div class="card stat-card p-6 text-center" onclick="navigateTo('billing', document.getElementById('nav-billing'))">
+                        <h3 class="text-gray-500 font-bold text-xs uppercase mb-1">Total spend</h3>
+                        <p class="text-3xl font-bold text-gray-800">₱ 111, 284</p>
+                        <p class="text-[10px] text-red-400 mt-2 font-semibold italic">April 2026 — Unpaid</p>
+                    </div>
+                    <div class="card stat-card p-6 text-center" onclick="navigateTo('analytics', document.getElementById('nav-analytics'))">
+                        <h3 class="text-gray-500 font-bold text-xs uppercase mb-1">Completion rate</h3>
+                        <p class="text-3xl font-bold text-gray-800">98.6%</p>
+                        <p class="text-[10px] text-red-400 mt-2 font-semibold italic">April 2026 — Unpaid</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="card p-4 h-80"><canvas id="lineChart"></canvas></div>
+                    <div class="card p-4 h-80"><canvas id="deptPieChart"></canvas></div>
+                    <div class="card p-4 h-80"><canvas id="barChart"></canvas></div>
+                </div>
+            </div>
+
+            
+            <div id="catalog" class="page-content">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">Test Catalog</h2>
+                <div class="card p-6">
+                    <div class="flex justify-between mb-4">
+                        <input type="text" placeholder="Search tests..." class="border p-2 rounded w-1/3 outline-none focus:ring-2 focus:ring-[#88B2A1]">
+                        <button class="bg-[#88B2A1] text-white px-4 py-2 rounded font-bold text-sm">+ Add New Test</button>
+                    </div>
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="text-gray-400 text-xs uppercase border-b">
+                                <th class="pb-3">Code</th>
+                                <th class="pb-3">Description</th>
+                                <th class="pb-3">Category</th>
+                                <th class="pb-3">Price</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-sm text-gray-700">
+                            <tr class="border-b hover:bg-gray-50"><td class="py-3">CBC-01</td><td>Complete Blood Count</td><td>Hematology</td><td>₱ 250.00</td></tr>
+                            <tr class="border-b hover:bg-gray-50"><td class="py-3">UA-01</td><td>Urinalysis</td><td>Clinical Microscopy</td><td>₱ 150.00</td></tr>
+                            <tr class="border-b hover:bg-gray-50"><td class="py-3">FBS-01</td><td>Fasting Blood Sugar</td><td>Chemistry</td><td>₱ 200.00</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="requests" class="page-content">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">Lab Requests</h2>
+                <div class="card p-8 text-center flex flex-col items-center justify-center">
+                    <i class="fas fa-clipboard-list text-5xl text-gray-200 mb-4"></i>
+                    <p class="text-gray-500">No active requests for the selected date range.</p>
+                </div>
+            </div>
+
+            <div id="billing" class="page-content">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">Billing & Invoices</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="card p-6">
+                        <h4 class="font-bold text-gray-500 mb-4">PENDING INVOICES</h4>
+                        <div class="flex justify-between items-center text-sm mb-2"><span>#INV-2026-001</span><span class="text-red-500 font-bold">₱ 12,500.00</span></div>
+                    </div>
+                    <div class="card p-6 bg-[#88B2A1] text-white">
+                        <h4 class="font-bold mb-4">QUICK SUMMARY</h4>
+                        <p class="text-3xl font-bold">₱ 111,284.00</p>
+                        <p class="text-xs">Total Unpaid for April 2026</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="analytics" class="page-content">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">Deep Analytics</h2>
+                <div class="grid grid-cols-2 gap-6">
+                    <div class="card p-4 h-64 flex items-center justify-center text-gray-400 italic">Historical Trend Chart</div>
+                    <div class="card p-4 h-64 flex items-center justify-center text-gray-400 italic">Performance Heatmap</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+   
+    <div id="logoutModal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/50 backdrop-blur-sm opacity-0">
+        <div id="modalContainer" class="bg-white rounded-xl shadow-2xl p-8 max-w-sm w-full mx-4 transform scale-95 opacity-0">
+            <div class="text-center">
+                <div class="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fa-solid fa-right-from-bracket text-2xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">Sign Out</h3>
+                <p class="text-gray-500 mb-6">Are you sure you want to end your session? You will need to log back in to access the dashboard.</p>
+                
+                <div class="flex gap-3">
+                    <button onclick="closeLogoutModal()" class="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors">
+                        Cancel
+                    </button>
+                    <button id="confirmSignOutBtn" onclick="executeSignOut()" class="flex-1 px-4 py-2.5 bg-red-500 text-white rounded-lg font-semibold hover:bg-red-600 shadow-md transition-all flex items-center justify-center gap-2">
+                        Sign Out
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        
+        function navigateTo(sectionId, element) {
+            document.querySelectorAll('.page-content').forEach(page => page.classList.remove('active'));
+            document.getElementById(sectionId).classList.add('active');
+
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active-nav'));
+            if(element) element.classList.add('active-nav');
+        }
+
+       
+        function showLogoutModal() {
+            const modal = document.getElementById('logoutModal');
+            const container = document.getElementById('modalContainer');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.add('opacity-100');
+                container.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function closeLogoutModal() {
+            const modal = document.getElementById('logoutModal');
+            const container = document.getElementById('modalContainer');
+            modal.classList.remove('opacity-100');
+            container.classList.remove('scale-100', 'opacity-100');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        function executeSignOut() {
+            const btn = document.getElementById('confirmSignOutBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch animate-spin"></i> Processing...';
+            
+            
+            setTimeout(() => {
+                window.location.reload(); 
+            }, 1500);
+        }
+
+        
+        Chart.register(ChartDataLabels);
+        new Chart(document.getElementById('lineChart'), {
+            type: 'line',
+            data: { labels: ['Mar', 'May', 'Jun', 'Feb', 'Mar'], datasets: [{ data: [20, 45, 95, 80, 70], borderColor: '#4285f4', tension: 0.4 }] },
+            options: { maintainAspectRatio: false, plugins: { datalabels: { display: false }, legend: { display: false } } }
+        });
+
+        new Chart(document.getElementById('deptPieChart'), {
+            type: 'pie',
+            data: {
+                labels: ['Finance', 'Marketing', 'HR', 'Sales'],
+                datasets: [{ data: [25, 15, 5, 55], backgroundColor: ['#b388ff', '#ffcc80', '#fff59d', '#4285f4'], borderWidth: 0 }]
+            },
+            options: {
+                maintainAspectRatio: false, layout: { padding: 45 },
+                plugins: { legend: { display: false }, datalabels: { color: '#4a5568', font: { weight: 'bold', size: 11 }, anchor: 'end', align: 'end', offset: 10, formatter: (value, ctx) => ctx.chart.data.labels[ctx.dataIndex] + '\n' + value + '%', textAlign: 'center' } }
+            }
+        });
+
+        new Chart(document.getElementById('barChart'), {
+            type: 'bar',
+            data: { 
+                labels: ['Jan', 'Feb', 'Mar'], 
+                datasets: [
+                    { label: 'Desktop', data: [3950, 3150, 2150], backgroundColor: '#4285f4' }, 
+                    { label: 'Mobile', data: [2400, 1600, 1100], backgroundColor: '#b388ff' }
+                ] 
+            },
+            options: {
+                maintainAspectRatio: false,
+                plugins: { datalabels: { display: false }, legend: { display: true, position: 'top', labels: { usePointStyle: true, pointStyle: 'circle', padding: 20 } } },
+                scales: { y: { beginAtZero: true }, x: { grid: { display: false } } }
+            }
+        });
+    </script>
+</body>
+</html>
